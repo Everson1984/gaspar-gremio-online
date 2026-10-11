@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Administração — Votação</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="/">Grêmio Estudantil</a>
+    <a class="header-link" href="/">Voltar à votação</a>
+  </header>
+  <main class="container narrow">
+    <section class="intro">
+      <p class="eyebrow">Acesso restrito</p>
+      <h1>Área administrativa</h1>
+      <p>Entre com a senha configurada pela equipe organizadora.</p>
+    </section>
+    <% if (message) { %><p class="notice" role="status"><%= message %></p><% } %>
+    <section class="panel">
+      <form action="/admin/login" method="post">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <label class="field-label" for="password">Senha administrativa</label>
+        <input class="text-input" id="password" name="password" type="password" autocomplete="current-password" required>
+        <button class="button button-primary" type="submit">Entrar</button>
+      </form>
+    </section>
+  </main>
+</body>
+</html>

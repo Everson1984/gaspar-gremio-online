@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Administração — Votação</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="/">Grêmio Estudantil</a>
+    <div class="header-actions">
+      <a class="header-link" href="/">Ver votação</a>
+      <form action="/admin/logout" method="post">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <button class="link-button" type="submit">Sair</button>
+      </form>
+    </div>
+  </header>
+  <main class="container">
+    <section class="intro">
+      <p class="eyebrow">Painel de organização</p>
+      <h1>Administração da eleição</h1>
+      <p>Prepare as candidaturas e os códigos antes de abrir a votação.</p>
+    </section>
+    <% if (message) { %><p class="notice" role="status"><%= message %></p><% } %>
+
+    <section class="panel">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Estado da eleição</p>
+          <h2>
+            <% if (election.status === 'setup') { %>Em preparação<% } %>
+            <% if (election.status === 'open') { %>Votação aberta<% } %>
+            <% if (election.status === 'closed') { %>Votação encerrada<% } %>
+          </h2>
+        </div>
+        <span class="status <%= election.status === 'open' ? 'status-open' : '' %>"><%= election.status === 'open' ? 'Aberta' : election.status === 'closed' ? 'Encerrada' : 'Preparação' %></span>
+      </div>
+      <% if (election.status === 'setup') { %>
+        <form action="/admin/election" method="post">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <input type="hidden" name="action" value="open">
+          <button class="button button-primary" type="submit">Abrir votação</button>
+        </form>
+      <% } else if (election.status === 'open') { %>
+        <form action="/admin/election" method="post">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <input type="hidden" name="action" value="close">
+          <button class="button button-danger" type="submit">Encerrar votação</button>
+        </form>
+      <% } %>
+    </section>
+
+    <% if (election.status === 'setup') { %>
+      <div class="admin-grid">
+        <section class="panel">
+          <p class="eyebrow">Etapa 1</p>
+          <h2>Candidaturas</h2>
+          <form action="/admin/candidates" method="post" class="stack">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <label class="field-label" for="name">Nome da candidatura *</label>
+            <input class="text-input" id="name" name="name" maxlength="80" required>
+            <label class="field-label" for="group_name">Integrantes ou turma</label>
+            <input class="text-input" id="group_name" name="group_name" maxlength="80">
+            <label class="field-label" for="proposal">Propostas</label>
+            <textarea class="text-input" id="proposal" name="proposal" rows="3" maxlength="500"></textarea>
+            <button class="button button-secondary" type="submit">Adicionar candidatura</button>
+          </form>
+          <% if (candidates.length) { %>
+            <ul class="admin-list">
+              <% candidates.forEach((candidate) => { %>
+                <li><strong><%= candidate.name %></strong><% if (candidate.group_name) { %><span><%= candidate.group_name %></span><% } %></li>
+              <% }); %>
+            </ul>
+          <% } else { %>
+            <p class="field-help">Nenhuma candidatura adicionada.</p>
+          <% } %>
+        </section>
+
+        <section class="panel">
+          <p class="eyebrow">Etapa 2</p>
+          <h2>Códigos de votação</h2>
+          <p>Gerados: <strong><%= codeStats.total %></strong> · Utilizados: <strong><%= codeStats.used %></strong></p>
+          <form action="/admin/codes" method="post" class="stack">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <label class="field-label" for="count">Quantidade de códigos (1–500)</label>
+            <input class="text-input" id="count" name="count" type="number" min="1" max="500" value="30" required>
+            <button class="button button-secondary" type="submit">Gerar códigos</button>
+          </form>
+          <% if (newCodes.length) { %>
+            <div class="generated-box">
+              <strong>Copie e guarde estes códigos. Eles não serão exibidos novamente.</strong>
+              <textarea class="text-input generated-codes" id="new-voter-codes" rows="8" readonly><%= newCodes.join('\n') %></textarea>
+              <p class="field-help">Entregue um código a cada participante por um canal seguro.</p>
+            </div>
+          <% } %>
+        </section>
+      </div>
+    <% } %>
+
+    <% if (election.status === 'closed') { %>
+      <section class="panel">
+        <h2>Resultado final</h2>
+        <ol class="results-list">
+          <% candidates.slice().sort((a, b) => b.vote_count - a.vote_count || a.name.localeCompare(b.name)).forEach((candidate) => { %>
+            <li><span><strong><%= candidate.name %></strong><% if (candidate.group_name) { %> <span class="candidate-group"><%= candidate.group_name %></span><% } %></span><strong><%= candidate.vote_count %> <%= candidate.vote_count === 1 ? 'voto' : 'votos' %></strong></li>
+          <% }); %>
+        </ol>
+        <p class="field-help"><%= codeStats.used %> códigos utilizados de <%= codeStats.total %> gerados.</p>
+      </section>
+    <% } else if (election.status === 'open') { %>
+      <section class="panel">
+        <h2>Acompanhamento</h2>
+        <p><%= codeStats.used %> códigos utilizados de <%= codeStats.total %>. A apuração só fica visível após encerrar a votação.</p>
+      </section>
+    <% } %>
+  </main>
+</body>
+</html>

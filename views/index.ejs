@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Votação — Grêmio Estudantil</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="/">Grêmio Estudantil</a>
+    <a class="header-link" href="/admin/login">Área administrativa</a>
+  </header>
+  <main class="container">
+    <section class="intro">
+      <p class="eyebrow">PEI Doutor Gaspar Ricardo Junior</p>
+      <h1>Eleição do Grêmio</h1>
+      <p>Conheça as opções e participe da votação.</p>
+    </section>
+
+    <% if (message) { %>
+      <p class="notice" role="status"><%= message %></p>
+    <% } %>
+
+    <% if (election.status === 'open') { %>
+      <section class="panel">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Votação aberta</p>
+            <h2>Escolha uma candidatura</h2>
+          </div>
+          <span class="status status-open">Aberta</span>
+        </div>
+        <% if (candidates.length) { %>
+          <form action="/vote" method="post">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <fieldset class="candidate-list">
+              <legend class="visually-hidden">Candidaturas</legend>
+              <% candidates.forEach((candidate) => { %>
+                <label class="candidate-card">
+                  <input type="radio" name="candidate_id" value="<%= candidate.id %>" required>
+                  <span>
+                    <strong><%= candidate.name %></strong>
+                    <% if (candidate.group_name) { %><span class="candidate-group"><%= candidate.group_name %></span><% } %>
+                    <% if (candidate.proposal) { %><span class="candidate-proposal"><%= candidate.proposal %></span><% } %>
+                  </span>
+                </label>
+              <% }); %>
+            </fieldset>
+            <label class="field-label" for="code">Código individual de votação</label>
+            <input class="text-input code-input" id="code" name="code" autocomplete="off" autocapitalize="characters" maxlength="39" required>
+            <p class="field-help">Use o código recebido pela escola. Cada código permite um voto.</p>
+            <button class="button button-primary" type="submit">Confirmar meu voto</button>
+          </form>
+        <% } else { %>
+          <p>Não há candidaturas cadastradas.</p>
+        <% } %>
+      </section>
+    <% } else if (election.status === 'closed') { %>
+      <section class="panel">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Votação encerrada</p>
+            <h2>Resultado</h2>
+          </div>
+          <span class="status">Encerrada</span>
+        </div>
+        <% if (candidates.length) { %>
+          <ol class="results-list">
+            <% candidates.slice().sort((a, b) => b.vote_count - a.vote_count || a.name.localeCompare(b.name)).forEach((candidate) => { %>
+              <li><span><strong><%= candidate.name %></strong><% if (candidate.group_name) { %> <span class="candidate-group"><%= candidate.group_name %></span><% } %></span><strong><%= candidate.vote_count %> <%= candidate.vote_count === 1 ? 'voto' : 'votos' %></strong></li>
+            <% }); %>
+          </ol>
+        <% } else { %>
+          <p>Nenhuma candidatura foi cadastrada.</p>
+        <% } %>
+      </section>
+    <% } else { %>
+      <section class="panel">
+        <span class="status">Em preparação</span>
+        <h2>A votação ainda não começou</h2>
+        <p>Assim que a equipe organizadora abrir a eleição, esta página estará disponível para votar.</p>
+      </section>
+    <% } %>
+    <p class="privacy-note">Seu código é validado para impedir votos duplicados. O sistema registra apenas a quantidade de votos de cada candidatura, sem associar o código à escolha.</p>
+  </main>
+  <footer class="site-footer">Grêmio Estudantil · PEI Doutor Gaspar Ricardo Junior</footer>
+</body>
+</html>

@@ -33,7 +33,7 @@ O sistema armazena apenas hashes dos códigos e totais agregados por candidatura
 
 ## Implantação
 
-Configure `NODE_ENV=production`, `ADMIN_PASSWORD`, `SESSION_SECRET` e `VOTER_CODE_SECRET` no ambiente do servidor. Use HTTPS, mantenha o arquivo do banco SQLite persistente e restrinja seu acesso ao processo do aplicativo. Faça cópias de segurança do banco e guarde os segredos fora dele. Para mudar o local do banco, defina `DATABASE_PATH`.
+Configure `NODE_ENV=production`, `ADMIN_PASSWORD`, `SESSION_SECRET` e `VOTER_CODE_SECRET` no ambiente do servidor. Use HTTPS, mantenha o arquivo do banco SQLite persistente (ele também armazena as sessões) e restrinja seu acesso ao processo do aplicativo. Faça cópias de segurança do banco e guarde os segredos fora dele. Para mudar o local do banco, defina `DATABASE_PATH`.
 
 ## Verificações
 

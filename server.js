@@ -51,7 +51,74 @@ db.exec(`
     code_hash TEXT PRIMARY KEY,
     used INTEGER NOT NULL DEFAULT 0 CHECK (used IN (0, 1))
   ) WITHOUT ROWID;
+
+  CREATE TABLE IF NOT EXISTS session_store (
+    sid TEXT PRIMARY KEY,
+    sess TEXT NOT NULL,
+    expires_at INTEGER NOT NULL
+  ) WITHOUT ROWID;
 `);
+
+class SQLiteSessionStore extends session.Store {
+  constructor(database) {
+    super();
+    this.database = database;
+    this.getSession = database.prepare('SELECT sess, expires_at FROM session_store WHERE sid = ?');
+    this.saveSession = database.prepare(`
+      INSERT INTO session_store (sid, sess, expires_at) VALUES (?, ?, ?)
+      ON CONFLICT (sid) DO UPDATE SET sess = excluded.sess, expires_at = excluded.expires_at
+    `);
+    this.deleteSession = database.prepare('DELETE FROM session_store WHERE sid = ?');
+    this.deleteExpiredSessions = database.prepare('DELETE FROM session_store WHERE expires_at <= ?');
+  }
+
+  get(sid, callback) {
+    try {
+      const row = this.getSession.get(sid);
+      if (!row || row.expires_at <= Date.now()) {
+        this.deleteSession.run(sid);
+        return callback(null, null);
+      }
+      callback(null, JSON.parse(row.sess));
+    } catch (error) {
+      callback(error);
+    }
+  }
+
+  set(sid, sessionData, callback = () => {}) {
+    try {
+      const expiresAt = sessionData.cookie && sessionData.cookie.expires
+        ? new Date(sessionData.cookie.expires).getTime()
+        : Date.now() + (sessionData.cookie && sessionData.cookie.maxAge || 86400000);
+      this.saveSession.run(sid, JSON.stringify(sessionData), expiresAt);
+      this.deleteExpiredSessions.run(Date.now());
+      callback(null);
+    } catch (error) {
+      callback(error);
+    }
+  }
+
+  touch(sid, sessionData, callback = () => {}) {
+    try {
+      const expiresAt = sessionData.cookie && sessionData.cookie.expires
+        ? new Date(sessionData.cookie.expires).getTime()
+        : Date.now() + (sessionData.cookie && sessionData.cookie.maxAge || 86400000);
+      this.database.prepare('UPDATE session_store SET expires_at = ? WHERE sid = ?').run(expiresAt, sid);
+      callback(null);
+    } catch (error) {
+      callback(error);
+    }
+  }
+
+  destroy(sid, callback = () => {}) {
+    try {
+      this.deleteSession.run(sid);
+      callback(null);
+    } catch (error) {
+      callback(error);
+    }
+  }
+}
 
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
@@ -61,6 +128,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(session({
   name: 'gaspar-vote',
   secret: sessionSecret,
+  store: new SQLiteSessionStore(db),
   resave: false,
   saveUninitialized: false,
   cookie: {
